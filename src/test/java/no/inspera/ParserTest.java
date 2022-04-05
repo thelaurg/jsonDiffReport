@@ -3,7 +3,8 @@ package no.inspera;
 import lombok.SneakyThrows;
 import net.sf.json.JSONObject;
 import net.sf.json.JSONSerializer;
-import no.inspera.model.*;
+import no.inspera.model.Candidate;
+import no.inspera.model.Main;
 import no.inspera.model.report.CandidateIdReport;
 import no.inspera.model.report.CandidatesDifferenceReport;
 import no.inspera.model.report.DifferenceReport;
@@ -15,7 +16,6 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
