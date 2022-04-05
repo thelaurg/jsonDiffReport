@@ -98,9 +98,6 @@ public class Parser {
 
 
     Main jsonToBean(JSONObject jsonObject) {
-        // TODO - treat invalid JSON structure
-        // JSONUtils.getMorpherRegistry().registerMorpher(new DateMorpher(new String[] {"yyyy-MM-dd'T'HH:mm:ss'Z'"}));
-
         Map<String, Class> classMap = Map.of("candidates", Candidate.class);
         return (Main)JSONObject.toBean(jsonObject, Main.class, classMap);
     }

@@ -7,7 +7,7 @@
     * but, treated only edit for this information.
   * maybe the different format for date field in `diff.json` was intended, 
     but for the sake of the assumption will use same format in all json files, 
-    spo we can work with only `String` objects for metadata values.
+    so we can work with only `String` objects for metadata values.
 
 ### Implementation
  * Transformed and worked with JSONs as java beans for strong type and better semantics
