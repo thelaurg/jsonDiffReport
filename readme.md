@@ -13,6 +13,10 @@
  * Transformed and worked with JSONs as java beans for strong type and better semantics
  * wanted to use in `JSONAssert.assertEquals` but array comparison is tight, and didn't find a way to make it loose - used `Mokito` instead.
 
+#### TO BE CONSIDERED
+ * treat invalid json structure
+ * duplicate candidate IDs
+
 ## Goal
 The goal of the project is to implement a parser that takes two JSONObjects (net.sf.json.JSONObject, or another similar framework) as input and returns a JSONObject that details the changes between the two input objects.
 
