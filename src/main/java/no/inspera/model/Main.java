@@ -12,6 +12,6 @@ import java.util.Map;
 @NoArgsConstructor
 public class Main {
     private Long id;
-    private Map<String, String> meta;
+    private MetaData meta;
     private List<Candidate> candidates;
 }

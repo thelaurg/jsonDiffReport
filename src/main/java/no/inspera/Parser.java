@@ -1,14 +1,22 @@
 package no.inspera;
 
-import net.sf.json.JSONObject;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import lombok.SneakyThrows;
 import no.inspera.model.Candidate;
 import no.inspera.model.Main;
+import no.inspera.model.MetaData;
 import no.inspera.model.report.*;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -17,14 +25,33 @@ import java.util.stream.Stream;
  */
 public class Parser {
 
+    private final ObjectMapper objectMapper;
+    private final DateTimeFormatter dateTimeFormatter;
+
+    public Parser() {
+        objectMapper = new ObjectMapper();
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        objectMapper.registerModule(new JavaTimeModule());
+        dateTimeFormatter = new DateTimeFormatterBuilder().appendPattern("yyyy-MM-dd'T'HH:mm:ss")
+                .parseLenient()
+                .appendOffset("+HH:MM", "UTC")
+                .toFormatter();
+
+    }
+
+    public ObjectMapper getObjectMapper() {
+        return objectMapper;
+    }
+
     /**
-     * Generate difference report for elements of two fixed known structure JSONObjects.
+     * Generate difference report for elements of two fixed known structure JsonNode.
      *
      * @param before - before Object state
      * @param after - after Object state
      * @return difference report as JSON
      */
-    public JSONObject parse(JSONObject before, JSONObject after) {
+    public JsonNode parse(JsonNode before, JsonNode after) {
 
         Main beforeBean = jsonToBean(before);
         Main afterBean = jsonToBean(after);
@@ -35,20 +62,36 @@ public class Parser {
         List<MetaFieldDifferenceReport> metaFieldsDifferenceReport =
                 generateMetaDiffReport(beforeBean.getMeta(), afterBean.getMeta());
 
-        return JSONObject.fromObject(new DifferenceReport(metaFieldsDifferenceReport, candidatesDifferenceReport));
+        return objectMapper.convertValue(new DifferenceReport(metaFieldsDifferenceReport, candidatesDifferenceReport), JsonNode.class);
     }
 
     List<MetaFieldDifferenceReport> generateMetaDiffReport(
-            Map<String, String> beforeMeta, Map<String, String> afterMeta) {
+            MetaData beforeMeta, MetaData afterMeta) {
         List<MetaFieldDifferenceReport> metaFieldDifferenceReport = new ArrayList<>();
-        for (Map.Entry<String, String> afterEntry : afterMeta.entrySet()) {
-            String beforeValue = beforeMeta.get(afterEntry.getKey());
-            if (beforeValue != null && !beforeValue.equals(afterEntry.getValue())) {
-                metaFieldDifferenceReport.add(
-                        new MetaFieldDifferenceReport(afterEntry.getKey(), beforeValue, afterEntry.getValue()));
-            }
+
+        if(!beforeMeta.getTitle().equals(afterMeta.getTitle())) {
+            metaFieldDifferenceReport.add(
+                    new MetaFieldDifferenceReport("title", beforeMeta.getTitle(), afterMeta.getTitle()));
         }
+        if(beforeMeta.getStartTime().compareTo(afterMeta.getStartTime()) != 0) {
+            metaFieldDifferenceReport.add(
+                    new MetaFieldDifferenceReport("startTime", formatDateToOsloTimezone(beforeMeta.getStartTime()),
+                            formatDateToOsloTimezone(afterMeta.getStartTime())));
+        }
+        if(beforeMeta.getEndTime().compareTo(afterMeta.getEndTime()) != 0) {
+            metaFieldDifferenceReport.add(
+                    new MetaFieldDifferenceReport("endTime", formatDateToOsloTimezone(beforeMeta.getEndTime()),
+                            formatDateToOsloTimezone(afterMeta.getEndTime())));
+        }
+
         return metaFieldDifferenceReport;
+    }
+
+    private String formatDateToOsloTimezone(LocalDateTime date) {
+        ZonedDateTime zdt = date.atZone(ZoneId.of("UTC"));
+
+        return dateTimeFormatter.format(zdt.withZoneSameInstant(ZoneId.of("Europe/Oslo")));
+
     }
 
     CandidatesDifferenceReport generateCandidatesDiffReport(List<Candidate> beforeCandidates,
@@ -100,9 +143,9 @@ public class Parser {
     }
 
 
-    Main jsonToBean(JSONObject jsonObject) {
-        Map<String, Class> classMap = Map.of("candidates", Candidate.class);
-        return (Main)JSONObject.toBean(jsonObject, Main.class, classMap);
+    @SneakyThrows
+    Main jsonToBean(JsonNode jsonRoot) {
+        return objectMapper.treeToValue(jsonRoot, Main.class);
     }
 
 }
